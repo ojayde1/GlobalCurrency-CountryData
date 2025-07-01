@@ -1,0 +1,13 @@
+{
+  "name": "globalcurrency-countrydata",
+  "version": "1.0.0",
+  "description": "Node.js application to fetch and display global country data and currency exchange rates.", 
+  "main": "app.js",
+  "scripts": {
+    "start": "node app.js"
+  },
+  "dependencies": {
+    "express": "^4.18.2",
+    "axios": "^1.6.0"
+  }
+}
