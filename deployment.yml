@@ -1,0 +1,22 @@
+# deployment.yml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: globalcurrency-countrydata-deployment 
+  labels:
+    app: globalcurrency-countrydata 
+spec:
+  replicas: 2 
+  selector:
+    matchLabels:
+      app: globalcurrency-countrydata 
+  template:
+    metadata:
+      labels:
+        app: globalcurrency-countrydata 
+    spec:
+      containers:
+      - name: globalcurrency-countrydata-app 
+        image: ojayde35/globalcurrency-countrydata-app:latest 
+        ports:
+        - containerPort: 3000 

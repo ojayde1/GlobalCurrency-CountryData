@@ -1,0 +1,85 @@
+name: CI/CD Pipeline 
+
+on:
+  push:
+    branches: [ main ] # Triggers on push to the main branch
+  pull_request:
+    branches: [ main ] # Triggers on pull requests to the main branch
+
+jobs:
+  build-and-deploy: # This single job handles everything: checkout, deploy setup, build, and Kubernetes deployment
+    runs-on: ubuntu-latest # Uses a GitHub-hosted Ubuntu runner
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v3 # Checks out your repository's code into the runner's workspace
+
+    - name: Configure AWS credentials
+      # This action sets up AWS CLI credentials on the runner.
+      # While not directly used for deployment commands here (SSH is used),
+      # it's good practice if you have other AWS CLI interactions.
+      uses: aws-actions/configure-aws-credentials@v2
+      with:
+        aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+        aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+        aws-region: eu-west-1 # Make sure this matches your EC2 instance's region
+
+    - name: Connect to EC2 instance and Deploy to Kubernetes
+      run: |
+        # Create a temporary file for the SSH private key from GitHub secrets
+        echo "${{ secrets.EC2_SSH_KEY }}" > private_key.pem
+        # Set restrictive permissions on the private key for security
+        chmod 600 private_key.pem
+
+        # Define the application directory on the EC2 instance
+        # Using SERVER_USERNAME secret for dynamic path
+        APP_DIR="/home/${{ secrets.SERVER_USERNAME }}/globalcurrency-countrydata-app"
+
+        # SSH into the EC2 instance to clean and create the app directory
+        # -o StrictHostKeyChecking=no bypasses the host key check for CI (use with caution)
+        ssh -i private_key.pem -o StrictHostKeyChecking=no ${{ secrets.SERVER_USERNAME }}@${{ secrets.SERVER_HOST }} "rm -rf $APP_DIR && mkdir -p $APP_DIR"
+
+        # Securely copy all project files from the runner to the EC2 instance's app directory
+        scp -i private_key.pem -o StrictHostKeyChecking=no -r . ${{ secrets.SERVER_USERNAME }}@${{ secrets.SERVER_HOST }}:$APP_DIR/
+
+        # SSH into the EC2 instance again to perform Docker build and Kubernetes deployment
+        ssh -i private_key.pem -o StrictHostKeyChecking=no ${{ secrets.SERVER_USERNAME }}@${{ secrets.SERVER_HOST }} << 'EOF'
+          # Navigate to the application directory on the EC2 instance
+          cd "$APP_DIR"
+
+          # IMPORTANT: Authenticate Docker to Docker Hub (if you plan to pull public images or push later)
+          # Though this specific pipeline builds locally on EC2, sometimes this is needed for base images.
+          # If ojayde35/globalcurrency-countrydata-app:latest was a public base image on Docker Hub, this might not be strictly needed for build,
+          # but is generally good practice if your workflow involves registries.
+          # For this specific setup, you won't be pushing/pulling from Docker Hub with this key.
+          # You can remove this login if your EC2 instance doesn't need to interact with private Docker Hub repos.
+          # echo "${{ secrets.DOCKERHUB_TOKEN }}" | docker login --username "${{ secrets.DOCKERHUB_USERNAME }}" --password-stdin
+
+          echo "Building Docker image for globalcurrency-countrydata-app locally on EC2..."
+          # Build the Docker image on the EC2 instance
+          # Tag the image with your Docker Hub username and app name
+          docker build -t ojayde35/globalcurrency-countrydata-app:latest .
+
+          echo "Loading image into Minikube..."
+          # Load the locally built Docker image directly into Minikube's Docker daemon
+          minikube image load ojayde35/globalcurrency-countrydata-app:latest
+
+          echo "Applying Kubernetes manifests..."
+          # Apply your Kubernetes Deployment and Service YAML files
+          # These files (deployment.yml, service.yml) MUST be in your repository root
+          kubectl apply -f deployment.yml
+          kubectl apply -f service.yml
+
+          echo "Waiting for globalcurrency-countrydata  deployment to be ready..."
+          # Wait for the Kubernetes deployment to become ready
+          kubectl rollout status deployment/globalcurrency-countrydata-deployment  # Adjust deployment name if different in deployment.yml
+
+          echo "Getting Minikube service URL for globalcurrency-countrydata-app..."
+          # Get the URL of your deployed service (output will appear in GitHub Actions logs)
+          minikube service globalcurrency-countrydata-service --url # Adjust service name if different in service.yml
+
+          echo "Deployment to Minikube on EC2 successful!!"
+        EOF
+        
+        # Clean up the temporary SSH private key from the GitHub Actions runner
+        rm -f private_key.pem
