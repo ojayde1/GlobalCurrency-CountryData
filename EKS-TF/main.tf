@@ -49,36 +49,6 @@ data "aws_subnets" "public" {
   # this data source might fail or EKS might not provision correctly.
 }
 
-# --- Security Group for EKS Cluster ---
-# This security group is essential for EKS cluster control plane communication
-# and for the Load Balancer to reach your application pods.
-resource "aws_security_group" "eks_cluster_sg" {
-  name        = "${var.project_name}-eks-cluster-sg"
-  description = "Security group for EKS cluster communication"
-  vpc_id      = data.aws_vpc.default.id # Use the default VPC ID
-
-  # Allow all outbound traffic (EKS needs to reach various AWS services)
-  egress {
-    from_port   = 0
-    to_port     = 0
-    protocol    = "-1"
-    cidr_blocks = ["0.0.0.0/0"]
-  }
-
-  # Allow all inbound traffic for simplicity in this project.
-  # In production, this should be highly restricted (e.g., specific ports/IPs).
-  ingress {
-    from_port   = 0
-    to_port     = 0
-    protocol    = "-1"
-    cidr_blocks = ["0.0.0.0/0"]
-  }
-
-  tags = {
-    Project = var.project_name
-  }
-}
-
 
 # --- EKS Cluster Provisioning ---
 resource "aws_eks_cluster" "this" {
@@ -88,7 +58,6 @@ resource "aws_eks_cluster" "this" {
 
   vpc_config {
     subnet_ids         = data.aws_subnets.public.ids # Using public subnets from default VPC
-    security_group_ids = [aws_security_group.eks_cluster_sg.id] # Attach the cluster SG
   }
 
   tags = {
