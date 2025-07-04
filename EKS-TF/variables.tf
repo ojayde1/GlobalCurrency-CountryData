@@ -9,7 +9,7 @@ variable "project_name" {
 variable "aws_region" {
   description = "The AWS region where resources will be deployed."
   type        = string
-  default     = "us-east-1" # You can change this to your preferred region (e.g., "us-east-2")
+  default     = "eu-west-1" # You can change this to your preferred region (e.g., "us-east-2")
 }
 
 # --- EKS Cluster Variables ---
