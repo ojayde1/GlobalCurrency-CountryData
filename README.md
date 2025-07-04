@@ -17,6 +17,7 @@ Run this command to install the dependencies
 npm install
 ```
 
+
 and then run this command to start the application 
 ```bash
 npm start
