@@ -52,7 +52,7 @@ variable "docker_hub_username" {
   description = "Your Docker Hub username for pulling the application image."
   type        = string
   # IMPORTANT: Provide your actual Docker Hub username here, or pass it via CLI/env var.
-  # Example: default = "ojayde35"
+  default = "ojayde35"
 }
 
 variable "app_replica_count" {
