@@ -33,24 +33,23 @@ jobs:
         # Set restrictive permissions on the private key for security
         chmod 600 private_key.pem
 
-        # Define the application directory on the EC2 instance.
-        # This MUST match the exact directory name you confirmed on EC2 (all lowercase, hyphens).
-        APP_DIR="/home/${{ secrets.SERVER_USERNAME }}/globalcurrency-countrydata-app"
+        # Define APP_DIR for the *local* runner's shell (used by scp)
+        LOCAL_APP_DIR="/home/${{ secrets.SERVER_USERNAME }}/globalcurrency-countrydata-app"
 
         echo "Attempting initial SSH to clean and create app directory on EC2 at $(date)"
         # SSH into the EC2 instance to clean and create the app directory
-        # -o StrictHostKeyChecking=no bypasses the host key check for CI (use with caution)
-        ssh -i private_key.pem -o StrictHostKeyChecking=no ${{ secrets.SERVER_USERNAME }}@${{ secrets.SERVER_HOST }} "rm -rf $APP_DIR && mkdir -p $APP_DIR"
+        # Use LOCAL_APP_DIR here as it's for the remote command executed directly
+        ssh -i private_key.pem -o StrictHostKeyChecking=no ${{ secrets.SERVER_USERNAME }}@${{ secrets.SERVER_HOST }} "rm -rf $LOCAL_APP_DIR && mkdir -p $LOCAL_APP_DIR"
         echo "Initial SSH complete at $(date)"
 
         echo "Starting SCP file transfer from runner to EC2 at $(date)"
         # Securely copy all project files from the runner to the EC2 instance's app directory
-        scp -i private_key.pem -o StrictHostKeyChecking=no -r . ${{ secrets.SERVER_USERNAME }}@${{ secrets.SERVER_HOST }}:$APP_DIR/
+        scp -i private_key.pem -o StrictHostKeyChecking=no -r . ${{ secrets.SERVER_USERNAME }}@${{ secrets.SERVER_HOST }}:$LOCAL_APP_DIR/
         echo "SCP file transfer complete at $(date)"
 
         # --- DEBUGGING ADDITION: Verify files copied to target directory after SCP ---
-        echo "Verifying files copied to $APP_DIR on EC2 (after SCP) at $(date)"
-        ssh -i private_key.pem -o StrictHostKeyChecking=no ${{ secrets.SERVER_USERNAME }}@${{ secrets.SERVER_HOST }} "ls -F $APP_DIR"
+        echo "Verifying files copied to $LOCAL_APP_DIR on EC2 (after SCP) at $(date)"
+        ssh -i private_key.pem -o StrictHostKeyChecking=no ${{ secrets.SERVER_USERNAME }}@${{ secrets.SERVER_HOST }} "ls -F $LOCAL_APP_DIR"
         echo "Verification complete at $(date)"
         # --- END DEBUGGING ADDITION ---
 
@@ -59,32 +58,24 @@ jobs:
           # Enable shell debugging to see every command executed
           set -eux # -e: exit immediately if a command exits with a non-zero status. -u: treat unset variables as an error. -x: print commands and their arguments as they are executed.
 
-          echo "Inside EC2 SSH session: Attempting to change directory to $APP_DIR at $(date)"
-          # Print the value of APP_DIR to ensure it's correct
-          echo "APP_DIR is: $APP_DIR"
-          # Print current working directory before cd
-          echo "Current directory before cd: $(pwd)"
-          # List all contents of the home directory to see if there are unexpected directories
-          echo "Listing contents of home directory before cd:"
+          # *** IMPORTANT FIX: Define APP_DIR inside the remote SSH session ***
+          APP_DIR="/home/${{ secrets.SERVER_USERNAME }}/globalcurrency-countrydata-app"
+          # *******************************************************************
+
+          echo "Inside EC2 SSH session: Current working directory is $(pwd) at $(date) (cd command was skipped)"
+
+          echo "Inside EC2 SSH session: Listing contents of the home directory at $(date)"
           ls -F ~
-          echo "Listing contents of target directory ($APP_DIR) before cd:"
-          ls -F "$APP_DIR" || echo "Target directory $APP_DIR does not exist before cd attempt."
-
-
-          # Explicitly change directory. 'set -e' will cause the script to exit if this fails.
-          cd "$APP_DIR"
-          echo "Inside EC2 SSH session: cd command executed successfully. Current working directory is $(pwd) at $(date)"
-
-          echo "Inside EC2 SSH session: Listing contents of current directory (after cd) at $(date)"
-          ls -F
-          echo "Inside EC2 SSH session: Directory listing complete at $(date)"
+          echo "Inside EC2 SSH session: Listing contents of the target app directory ($APP_DIR) at $(date)"
+          ls -F "$APP_DIR"
+          echo "Inside EC2 SSH session: Directory listings complete at $(date)"
 
           echo "Inside EC2 SSH session: Starting Minikube at $(date)"
           minikube start --driver=docker # This line is crucial!
           echo "Inside EC2 SSH session: Minikube started at $(date)"
 
           echo "Inside EC2 SSH session: Building Docker image for globalcurrency-countrydata-app locally on EC2 at $(date)"
-          docker build -t ojayde35/globalcurrency-countrydata-app:latest .
+          docker build -t ojayde35/globalcurrency-countrydata-app:latest -f "$APP_DIR/Dockerfile" "$APP_DIR"
           echo "Inside EC2 SSH session: Docker image built at $(date)"
 
           echo "Inside EC2 SSH session: Loading image into Minikube at $(date)"
@@ -92,8 +83,8 @@ jobs:
           echo "Inside EC2 SSH session: Image loaded into Minikube at $(date)"
 
           echo "Inside EC2 SSH session: Applying Kubernetes manifests at $(date)"
-          kubectl apply -f deployment.yml
-          kubectl apply -f service.yml
+          kubectl apply -f "$APP_DIR/deployment.yml"
+          kubectl apply -f "$APP_DIR/service.yml"
           echo "Inside EC2 SSH session: Kubernetes manifests applied at $(date)"
 
           echo "Inside EC2 SSH session: Waiting for globalcurrency-countrydata deployment to be ready at $(date)"
