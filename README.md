@@ -103,9 +103,6 @@ terraform apply
 
 ![Screenshot (258)](https://github.com/user-attachments/assets/82505720-b4aa-48bd-bc9d-b1a5f5c87be5)
 
-![Screenshot (260)](https://github.com/user-attachments/assets/88c19f69-ebd7-4c04-a8c0-3530b53e2778)
-
-![Screenshot (261)](https://github.com/user-attachments/assets/10090f1c-c88a-4ad9-957a-3e0fb7382eb7)
 
 ## 3.5 Configure kubectl
 
@@ -253,3 +250,4 @@ http://localhost:3000
 cd EKS-TF
 terraform destroy
 ```
+![Screenshot (272)](https://github.com/user-attachments/assets/404cc56f-7487-4b10-8328-d8dd3808be91)
