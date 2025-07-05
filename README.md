@@ -193,4 +193,4 @@ http://localhost:3000
 cd EKS-TF
 terraform destroy
 ```
-![Screenshot (272)](https://github.com/user-attachments/assets/404cc56f-7487-4b10-8328-d8dd3808be91)
+![Screenshot (272)](https://github.com/user-attachments/assets/a1cd0bd5-0f9d-4d17-b93c-078e939ade7b)
