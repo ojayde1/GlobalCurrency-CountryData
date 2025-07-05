@@ -1,4 +1,4 @@
-name: CI/CD Pipeline 
+name: CI/CD Pipeline
 
 on:
   push:
@@ -34,7 +34,7 @@ jobs:
         chmod 600 private_key.pem
 
         # Define the application directory on the EC2 instance.
-        # This MUST match the exact directory name on your EC2 instance (all lowercase, hyphens).
+        # This MUST match the exact directory name you confirmed on EC2 (all lowercase, hyphens).
         APP_DIR="/home/${{ secrets.SERVER_USERNAME }}/globalcurrency-countrydata-app"
 
         echo "Attempting initial SSH to clean and create app directory on EC2 at $(date)"
@@ -59,48 +59,45 @@ jobs:
           # Enable shell debugging to see every command executed
           set -x
 
-          echo "Inside EC2 SSH session: Navigating to app directory at $(date)"
-          # Add error handling for cd to make sure it succeeds
-          cd "$APP_DIR" || { echo "ERROR: Failed to change directory to $APP_DIR. Exiting SSH session."; exit 1; }
-          echo "Inside EC2 SSH session: cd command executed. Current working directory is $(pwd) at $(date)"
+          echo "Inside EC2 SSH session: Attempting to change directory to $APP_DIR at $(date)"
+          # Print the value of APP_DIR to ensure it's correct
+          echo "APP_DIR is: $APP_DIR"
+          # Print current working directory before cd
+          echo "Current directory before cd: $(pwd)"
+
+          # Explicitly change directory and check its success
+          if ! cd "$APP_DIR"; then
+            echo "ERROR: Failed to change directory to $APP_DIR. Exiting SSH session."
+            exit 1
+          fi
+          echo "Inside EC2 SSH session: cd command executed successfully. Current working directory is $(pwd) at $(date)"
 
           echo "Inside EC2 SSH session: Listing contents of current directory (after cd) at $(date)"
           ls -F
           echo "Inside EC2 SSH session: Directory listing complete at $(date)"
 
           echo "Inside EC2 SSH session: Starting Minikube at $(date)"
-          # IMPORTANT: Start Minikube. You might need to specify a driver if not default.
-          # For EC2, 'docker' driver is common if Docker is installed.
-          # You might also want to allocate more resources if your EC2 instance has them:
-          # minikube start --driver=docker --memory=4096mb --cpus=2
           minikube start --driver=docker # This line is crucial!
           echo "Inside EC2 SSH session: Minikube started at $(date)"
 
           echo "Inside EC2 SSH session: Building Docker image for globalcurrency-countrydata-app locally on EC2 at $(date)"
-          # Build the Docker image on the EC2 instance
-          # Tag the image with your Docker Hub username and app name
           docker build -t ojayde35/globalcurrency-countrydata-app:latest .
           echo "Inside EC2 SSH session: Docker image built at $(date)"
 
           echo "Inside EC2 SSH session: Loading image into Minikube at $(date)"
-          # Load the locally built Docker image directly into Minikube's Docker daemon
           minikube image load ojayde35/globalcurrency-countrydata-app:latest
           echo "Inside EC2 SSH session: Image loaded into Minikube at $(date)"
 
           echo "Inside EC2 SSH session: Applying Kubernetes manifests at $(date)"
-          # Apply your Kubernetes Deployment and Service YAML files
-          # These files (deployment.yml, service.yml) MUST be in your repository root
           kubectl apply -f deployment.yml
           kubectl apply -f service.yml
           echo "Inside EC2 SSH session: Kubernetes manifests applied at $(date)"
 
           echo "Inside EC2 SSH session: Waiting for globalcurrency-countrydata deployment to be ready at $(date)"
-          # Wait for the Kubernetes deployment to become ready
-          kubectl rollout status deployment/globalcurrency-countrydata-deployment # Adjust deployment name if different in deployment.yml
+          kubectl rollout status deployment/globalcurrency-countrydata-deployment
 
           echo "Inside EC2 SSH session: Getting Minikube service URL for globalcurrency-countrydata-app at $(date)"
-          # Get the URL of your deployed service (output will appear in GitHub Actions logs)
-          minikube service globalcurrency-countrydata-service --url # Adjust service name if different in service.yml
+          minikube service globalcurrency-countrydata-service --url
 
           echo "Deployment to Minikube on EC2 successful!!"
         EOF
