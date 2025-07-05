@@ -2,29 +2,28 @@
 
 ## Overview of the project
 ## 1.1. I have been given a Node.js application that accepts a user input and displays the country data.
-I was given a 
-Run this command to install the dependencies:
+Command to install the dependencies:
 ```bash
 npm install
 ```
-And then run this command to start the application:
+Command to start the application:
 
 ```bash
 npm start
 ```
 ![Screenshot (225)](https://github.com/user-attachments/assets/9e187c43-8bf0-49ae-89f9-ec80bf94ea40)
 
-You can view the application running on localhost:3000.
+ Viewed the application running on localhost:3000.
 
 ![Screenshot (227)](https://github.com/user-attachments/assets/e8661913-484f-422e-b3ca-d73bb3504d16)
 
 
 ## Containerize the Application with Docker
 ## 2.1. Write the Dockerfile
-Create a Dockerfile in the root of your project. 
+Created a Dockerfile in the root of the project. 
 
 ## 2.2. Build the Docker Image
-Build your Docker image. Make sure you are in the root directory of your project where your Dockerfile is located.
+Built my Docker image.
 
 ```bash
 docker build -t ojayde35/globalcurrency-countrydata-app:latest .
@@ -32,27 +31,24 @@ docker build -t ojayde35/globalcurrency-countrydata-app:latest .
 ![Screenshot (242)](https://github.com/user-attachments/assets/6a3473b7-2b89-429a-a88e-95ca65199b96)
 
 ## 2.3. Run the Container Locally (Optional but Recommended)
-Before pushing, run the container locally to confirm it's working perfectly:
+Before pushing i did run the container locally to confirm it's working perfectly:
 
 ```bash
 docker run -d -p 3000:3000 ojayde35/globalcurrency-countrydata-app:latest
 ```
 ![Screenshot (243)jr](https://github.com/user-attachments/assets/01a273a8-2378-4c79-91a1-ed2be148794c)
 
-You can view the application running on localhost:3000 in your browser.
+viewed the application running on localhost:3000 in your browser.
 
 ![Screenshot (241)](https://github.com/user-attachments/assets/2d27a537-a133-4bef-8832-c904d7fccfb2)
 
 ## 2.4. Push the Image to Your Docker Hub Registry
-First, log in to Docker Hub from your terminal:
+logged in to Docker Hub from your terminal:
 
 ```bash
 docker login -u
 ```
-Follow the browser-based authentication prompt. Press ENTER when prompted to open your browser, complete the login there, and your terminal will then log in automatically.
-
-Once logged in, push the image:
-
+Once logged in, i pushed the image:
 ```bash
 docker push ojayde35/globalcurrency-countrydata-app:latest
 ```
@@ -62,10 +58,10 @@ docker push ojayde35/globalcurrency-countrydata-app:latest
 This section outlines the steps for provisioning your EKS cluster using Terraform.
 
 ## 3.1. Terraform Configuration Files
-Create your Terraform configuration files (main.tf, variables.tf, outputs.tf, versions.tf) to define your EKS cluster, VPC, subnets, security groups, and IAM roles.
+I created Terraform configuration files (main.tf, variables.tf, outputs.tf, versions.tf) to define your EKS cluster, VPC, subnets, security groups, and IAM roles.
 Run the provided setup script to install Terraform, kubectl, and AWS CLI:
-
 ```bash
+
 chmod +x script.sh
 ./script.sh
 ```
@@ -106,7 +102,7 @@ terraform apply
 
 ## 3.5 Configure kubectl
 
-Update your kubeconfig to connect to the new EKS cluster:
+Updated kubeconfig to connect to the new EKS cluster:
 
 ```bash
 aws eks update-kubeconfig --region eu-west-1 --name globalcurrency-countrydata-cluster
@@ -118,95 +114,43 @@ aws eks update-kubeconfig --region eu-west-1 --name globalcurrency-countrydata-c
 kubectl apply -f deployment.yaml
 kubectl apply -f service.yaml
 ```
-Wait for the deployment to be ready.
+Waited for the deployment to be ready.
 ```bash
 kubectl get service globalcurrency-countrydata-service
 ```
-Get the Minikube service URL.
+ The Minikube service URL was available.
 
 ![Screenshot (270)](https://github.com/user-attachments/assets/d9e88520-c5e9-4af4-8b8e-b79f74da262f)
 
 ![Screenshot (271)](https://github.com/user-attachments/assets/6076bfae-517f-41fc-ab8a-6a1f170671d5)
 
-### Terraform Configuration
-
-**EKS Cluster (`main.tf`):**
-- Creates EKS cluster named 
-- Configures IAM roles and policies
-- Sets up node group with t2.medium instances
-- Uses default VPC and public subnets
-- Scaling configuration: 1-2 nodes
-
-**Provider (`provider.tf`):**
-- AWS provider version ~> 5.0
-- Default region: eu-west-1
-
-
-### Kubernetes Manifests
-
-**Deployment (`deployment.yaml`):**
-- Deploys App using `ojayde35/globalcurrency-countrydata-app:latest` image
-- 2 replicas for high availability
-- Container port: 3000
-
-**Service (`service.yaml`):**
-- LoadBalancer type service
-- Exposes the game on port 3000
-- Provides external access via AWS Load Balancer
-
-### Setup Script (`script.sh`)
-
-Automated installation of:
-- Terraform (latest version)
-- kubectl (latest stable version)
-- AWS CLI v2
-
-## 🔧 Configuration Options
-
-### Scaling the Application
-
- The `replicas` field in `deployment.yaml`:
-
-```yaml
-spec:
-  replicas: 2  # Increase for more instances
-```
-### Instance Types
-
-```hcl
-instance_types = ["t3.medium"]  
-```
-### Regional Deployment
-
-The region in `provider.tf`
-
 ## 4 Automate Deployment 
 using GitHub Actions (Minikube on EC2)
-This section details the CI/CD pipeline to deploy your application to a Minikube cluster running on an EC2 instance.
+This section details the CI/CD pipeline to deploy my application to a Minikube cluster running on an EC2 instance.
 
 ## 4.1. Configure GitHub Repository Secrets
-You need to add the following secrets to your GitHub repository (Settings > Secrets and variables > Actions > New repository secret):
+I added the following secrets to my GitHub repository (Settings > Secrets and variables > Actions > New repository secret):
 
-EC2_SSH_KEY: The entire content of your EC2 instance's SSH private key.
+EC2_SSH_KEY: The entire content of EC2 instance's SSH private key.
 
-SERVER_USERNAME: The SSH username for your EC2 instance (e.g., ubuntu).
+SERVER_USERNAME: The SSH username for  EC2 instance (e.g., ubuntu).
 
-SERVER_HOST: The Public IP address or Public DNS name of your EC2 instance.
+SERVER_HOST: The Public IP address or Public DNS name of EC2 instance.
 
 AWS_ACCESS_KEY_ID: Your AWS Access Key ID (for aws-actions/configure-aws-credentials).
 
 AWS_SECRET_ACCESS_KEY: Your AWS Secret Access Key (for aws-actions/configure-aws-credentials).
 
-(Optional) DOCKERHUB_USERNAME: Your Docker Hub username (if uncommenting Docker login).
+(Optional) DOCKERHUB_USERNAME: Docker Hub username (if uncommenting Docker login).
 
-(Optional) DOCKERHUB_TOKEN: A Docker Hub Personal Access Token (PAT) (if uncommenting Docker login).
+(Optional) DOCKERHUB_TOKEN:  Docker Hub Personal Access Token (PAT) (if uncommenting Docker login).
 
 ![Screenshot (267)](https://github.com/user-attachments/assets/e52e8f44-6d0d-4114-8685-c22271bc5214)
 
 ## 4.2. GitHub Actions Workflow (.github/workflows/main.yml)
-Create a file named main.yml inside the .github/workflows/ directory in your repository. This workflow will:
+Created a file named pipeline.yml inside the .github/workflows/ directory in the repository. This workflow will:
 
-Connect to your EC2 instance via SSH.
+Connect to EC2 instance via SSH.
 
 Clean and create the application directory on EC2.
 
@@ -221,17 +165,16 @@ Build the Docker image locally.
 Load the image into Minikube.
 
 ## 4.5 Access the Deployed Application
-Your application is now deployed to a Minikube cluster running on your EC2 instance. The minikube service --url command provided an internal IP (http://192.168.49.2:31328). To access this from your local machine's browser, you need to create an SSH tunnel.
+My application is now deployed to a Minikube cluster running on EC2 instance. The minikube service --url command provided an internal IP. To access this from the local machine's browser, i had to create an SSH tunnel.
 
 ## 4.6 Get EC2 Instance Public IP/DNS
-Obtain the Public IPv4 address or Public IPv4 DNS of your EC2 instance from the AWS EC2 Console.
+Obtained the Public IPv4 address or Public IPv4 DNS of your EC2 instance from the AWS EC2 Console.
 
 ## 4.7 Create SSH Tunnel from Your Local Machine
-Open a new terminal window on your local computer (not on the EC2 instance). Run the following SSH command, replacing placeholders with your actual values:
+I opened a new terminal window on your local computer (not on the EC2 instance). I used the following SSH command, replacing placeholders with your actual values:
 
 ```bash
 chmod 400 "<YOUR_RIVATE_KEY_PEM.pem>"
-
 ```
 ```bash
 ssh -i "<YOUR_RIVATE_KEY_PEM.pem>" ubuntu@ec2-54-229-187-189.eu-west-1.compute.amazonaws.com
@@ -239,13 +182,13 @@ ssh -i "<YOUR_RIVATE_KEY_PEM.pem>" ubuntu@ec2-54-229-187-189.eu-west-1.compute.a
 ![Screenshot (264)](https://github.com/user-attachments/assets/7c11c11a-0049-434e-b25d-737e6e680b77)
 
 ## 4.8 Access in Browser
-Open your web browser on your local machine and navigate to:
+Confirmed on the web browser on my local machine and navigated to:
 
 http://localhost:3000
 
 ![Screenshot (265)](https://github.com/user-attachments/assets/8aeee62d-2e9c-471d-87b5-d71e512d6176)
 
-*** Clean Up
+*** Clean up
 ## terraform destroy
 cd EKS-TF
 terraform destroy
