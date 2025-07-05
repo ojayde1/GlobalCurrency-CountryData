@@ -73,7 +73,7 @@ aws configure
 ![Screenshot (247)](https://github.com/user-attachments/assets/eaa7c3fe-af7c-4cf8-8f08-94160a2d6a87)
 
 ## 3.2. Initialize Terraform
-Navigate to your Terraform configuration directory and initialize Terraform:
+Navigated to my Terraform configuration directory and initialized Terraform:
 
 ```bash
 cd EKS-TF
