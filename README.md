@@ -1,52 +1,9 @@
 # Final DevOps Project
-Congratulations on progressing to this stage in your DevOps journey. Now is the time to show off the stuff you're made of. 
-
-## Instructions to complete the task 
-
-This is your final DevOps project. Over the past 4 months, we have delved into several key DevOps tools and practices. Now is the time to use all the knowledge you have gained to achieve this end-to-end devops task. 
-
 
 ## Overview of the project
-
-You have been given a nodejs application that accpets a user input and displays the country data. 
-
-Clone the repository, and test the application locally to be sure its working. 
-Run this command to install the dependencies
-
-```bash
-npm install
-```
-
-
-and then run this command to start the application 
-```bash
-npm start
-```
-
-You can view the application running on loacalhost:3000 
-
-## Your Task 
-
- - Write the Dockerfile to containerize the application. Build the docker image, push the image to your dockerhub registry
- - Run the container and confirm it working perfectly. 
- - Write the terraform configuration files to deploy the Application to Amazon Elastic Kubernetes Service
- - Automate the entire deployment using Github Actions 
-
- ## Deliverables 
-  - Take screenshots of every step, and include it in your README.md.
-  - When you're done with the project, destroy your entire infrastructure using the terraform destroy command.
-
-  ## Goodluck and all the best! 
-
-
-# Final DevOps Project
-
-## Overview of the project
-## 1.1. You have been given a Node.js application that accepts a user input and displays the country data.
-
-Clone the repository, and test the application locally to be sure it's working.
+## 1.1. I have been given a Node.js application that accepts a user input and displays the country data.
+I was given a 
 Run this command to install the dependencies:
-
 ```bash
 npm install
 ```
@@ -55,16 +12,16 @@ And then run this command to start the application:
 ```bash
 npm start
 ```
+![Screenshot (225)](https://github.com/user-attachments/assets/9e187c43-8bf0-49ae-89f9-ec80bf94ea40)
+
 You can view the application running on localhost:3000.
 
-Screenshot: Local Application Running
-(Include a screenshot of your application running successfully on localhost:3000)
+![Screenshot (227)](https://github.com/user-attachments/assets/e8661913-484f-422e-b3ca-d73bb3504d16)
 
 
 ## Containerize the Application with Docker
 ## 2.1. Write the Dockerfile
 Create a Dockerfile in the root of your project. 
-
 
 ## 2.2. Build the Docker Image
 Build your Docker image. Make sure you are in the root directory of your project where your Dockerfile is located.
@@ -72,10 +29,7 @@ Build your Docker image. Make sure you are in the root directory of your project
 ```bash
 docker build -t ojayde35/globalcurrency-countrydata-app:latest .
 ```
-
-
-Screenshot: Docker Image Build Success
-(Include a screenshot of the successful Docker image build output)
+![Screenshot (242)](https://github.com/user-attachments/assets/6a3473b7-2b89-429a-a88e-95ca65199b96)
 
 ## 2.3. Run the Container Locally (Optional but Recommended)
 Before pushing, run the container locally to confirm it's working perfectly:
@@ -83,11 +37,11 @@ Before pushing, run the container locally to confirm it's working perfectly:
 ```bash
 docker run -d -p 3000:3000 ojayde35/globalcurrency-countrydata-app:latest
 ```
+![Screenshot (243)jr](https://github.com/user-attachments/assets/01a273a8-2378-4c79-91a1-ed2be148794c)
 
 You can view the application running on localhost:3000 in your browser.
 
-Screenshot: Local Docker Container Running
-(Include a screenshot of your application running successfully in a Docker container on localhost:3000)
+![Screenshot (241)](https://github.com/user-attachments/assets/2d27a537-a133-4bef-8832-c904d7fccfb2)
 
 ## 2.4. Push the Image to Your Docker Hub Registry
 First, log in to Docker Hub from your terminal:
@@ -102,25 +56,25 @@ Once logged in, push the image:
 ```bash
 docker push ojayde35/globalcurrency-countrydata-app:latest
 ```
-Screenshot: Docker Image Pushed to Docker Hub
-(Include a screenshot of the successful docker push output)
+![Screenshot (266)](https://github.com/user-attachments/assets/598c04c2-c8e4-4754-8360-a2f5cc694865)
 
 ## Deploy the Application to Amazon Elastic Kubernetes Service (EKS) using Terraform
 This section outlines the steps for provisioning your EKS cluster using Terraform.
 
 ## 3.1. Terraform Configuration Files
 Create your Terraform configuration files (main.tf, variables.tf, outputs.tf, versions.tf) to define your EKS cluster, VPC, subnets, security groups, and IAM roles.
-
 Run the provided setup script to install Terraform, kubectl, and AWS CLI:
 
 ```bash
 chmod +x script.sh
 ./script.sh
 ```
+![Screenshot (246)](https://github.com/user-attachments/assets/25c5ded3-1787-4bbf-badf-d1f38b43db3d)
 
 ```bash
 aws configure
 ```
+![Screenshot (247)](https://github.com/user-attachments/assets/eaa7c3fe-af7c-4cf8-8f08-94160a2d6a87)
 
 ## 3.2. Initialize Terraform
 Navigate to your Terraform configuration directory and initialize Terraform:
@@ -129,25 +83,108 @@ Navigate to your Terraform configuration directory and initialize Terraform:
 cd EKS-TF
 terraform init
 ```
+![Screenshot (255)init](https://github.com/user-attachments/assets/d118a183-b041-4a87-9c7e-666722f5461b)
 
 ## 3.3. Plan the Infrastructure
 Review the execution plan to see what Terraform will create:
 ```bash
 terraform plan
 ```
-terraform plan
-
 ## 3.4. Apply the Infrastructure
-Provision the EKS cluster and associated resources:
+![Screenshot (255)plan](https://github.com/user-attachments/assets/928cc949-330c-486d-9f5f-2b21edc3fa43)
 
+Provision the EKS cluster and associated resources:
 ```bash
 terraform apply
 ```
+![Screenshot (256)apply](https://github.com/user-attachments/assets/03d4f437-489a-4b20-9bd6-7f524e1cfb8b)
 
-Screenshot: Terraform Apply Success
-(Include a screenshot of the successful terraform apply output)
+![Screenshot (257)](https://github.com/user-attachments/assets/030da969-e27d-4989-bcee-426a45737c43)
 
-## Automate Deployment using GitHub Actions (Minikube on EC2)
+![Screenshot (258)](https://github.com/user-attachments/assets/82505720-b4aa-48bd-bc9d-b1a5f5c87be5)
+
+![Screenshot (260)](https://github.com/user-attachments/assets/88c19f69-ebd7-4c04-a8c0-3530b53e2778)
+
+![Screenshot (261)](https://github.com/user-attachments/assets/10090f1c-c88a-4ad9-957a-3e0fb7382eb7)
+
+## 3.5 Configure kubectl
+
+Update your kubeconfig to connect to the new EKS cluster:
+
+```bash
+aws eks update-kubeconfig --region eu-west-1 --name globalcurrency-countrydata-cluster
+```
+
+## 3.6 Apply your Kubernetes deployment and service manifests.
+
+```bash
+kubectl apply -f deployment.yaml
+kubectl apply -f service.yaml
+```
+Wait for the deployment to be ready.
+```bash
+kubectl get service globalcurrency-countrydata-service
+```
+Get the Minikube service URL.
+
+![Screenshot (270)](https://github.com/user-attachments/assets/d9e88520-c5e9-4af4-8b8e-b79f74da262f)
+
+![Screenshot (271)](https://github.com/user-attachments/assets/6076bfae-517f-41fc-ab8a-6a1f170671d5)
+
+### Terraform Configuration
+
+**EKS Cluster (`main.tf`):**
+- Creates EKS cluster named 
+- Configures IAM roles and policies
+- Sets up node group with t2.medium instances
+- Uses default VPC and public subnets
+- Scaling configuration: 1-2 nodes
+
+**Provider (`provider.tf`):**
+- AWS provider version ~> 5.0
+- Default region: eu-west-1
+
+
+### Kubernetes Manifests
+
+**Deployment (`deployment.yaml`):**
+- Deploys App using `ojayde35/globalcurrency-countrydata-app:latest` image
+- 2 replicas for high availability
+- Container port: 3000
+
+**Service (`service.yaml`):**
+- LoadBalancer type service
+- Exposes the game on port 3000
+- Provides external access via AWS Load Balancer
+
+### Setup Script (`script.sh`)
+
+Automated installation of:
+- Terraform (latest version)
+- kubectl (latest stable version)
+- AWS CLI v2
+
+## 🔧 Configuration Options
+
+### Scaling the Application
+
+ The `replicas` field in `deployment.yaml`:
+
+```yaml
+spec:
+  replicas: 2  # Increase for more instances
+```
+### Instance Types
+
+```hcl
+instance_types = ["t3.medium"]  
+```
+### Regional Deployment
+
+The region in `provider.tf`
+
+## 4 Automate Deployment 
+using GitHub Actions (Minikube on EC2)
 This section details the CI/CD pipeline to deploy your application to a Minikube cluster running on an EC2 instance.
 
 ## 4.1. Configure GitHub Repository Secrets
@@ -167,8 +204,7 @@ AWS_SECRET_ACCESS_KEY: Your AWS Secret Access Key (for aws-actions/configure-aws
 
 (Optional) DOCKERHUB_TOKEN: A Docker Hub Personal Access Token (PAT) (if uncommenting Docker login).
 
-Screenshot: GitHub Secrets Configuration
-(Include a screenshot showing your configured GitHub secrets)
+![Screenshot (267)](https://github.com/user-attachments/assets/e52e8f44-6d0d-4114-8685-c22271bc5214)
 
 ## 4.2. GitHub Actions Workflow (.github/workflows/main.yml)
 Create a file named main.yml inside the .github/workflows/ directory in your repository. This workflow will:
@@ -187,22 +223,6 @@ Build the Docker image locally.
 
 Load the image into Minikube.
 
-Apply your Kubernetes deployment and service manifests.
-
-```bash
-kubectl apply -f deployment.yaml
-kubectl apply -f service.yaml
-```
-Wait for the deployment to be ready.
-
-```bash
-kubectl get service globalcurrency-countrydata-service
-```
-Get the Minikube service URL.
-
-Screenshot: GitHub Actions Workflow Run Success
-(Include a screenshot of a successful GitHub Actions workflow run, showing all steps green)
-
 ## 4.5 Access the Deployed Application
 Your application is now deployed to a Minikube cluster running on your EC2 instance. The minikube service --url command provided an internal IP (http://192.168.49.2:31328). To access this from your local machine's browser, you need to create an SSH tunnel.
 
@@ -216,23 +236,20 @@ Open a new terminal window on your local computer (not on the EC2 instance). Run
 chmod 400 "<YOUR_RIVATE_KEY_PEM.pem>"
 
 ```
-
 ```bash
 ssh -i "<YOUR_RIVATE_KEY_PEM.pem>" ubuntu@ec2-54-229-187-189.eu-west-1.compute.amazonaws.com
 ```
+![Screenshot (264)](https://github.com/user-attachments/assets/7c11c11a-0049-434e-b25d-737e6e680b77)
 
 ## 4.8 Access in Browser
 Open your web browser on your local machine and navigate to:
 
 http://localhost:3000
 
-You should see your globalcurrency-countrydata-app running!
+![Screenshot (265)](https://github.com/user-attachments/assets/8aeee62d-2e9c-471d-87b5-d71e512d6176)
 
-Screenshot: Application Accessible via SSH Tunnel
-(Include a screenshot of your application running successfully in your local browser via the SSH tunnel)
-
-Deliverables
-Take screenshots of every step, and include it in your README.md.
-
-When you're done with the project, destroy your entire infrastructure using the terraform destroy command.
-
+*** Clean Up
+## terraform destroy
+cd EKS-TF
+terraform destroy
+```
