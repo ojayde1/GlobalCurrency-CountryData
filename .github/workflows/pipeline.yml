@@ -1,4 +1,4 @@
-name: CI/CD Pipeline
+name: CI/CD Pipeline 
 
 on:
   push:
@@ -26,77 +26,60 @@ jobs:
 
     - name: Connect to EC2 instance and Deploy to Kubernetes
       run: |
-        echo "Starting 'Connect to EC2 instance and Deploy to Kubernetes' step at $(date)"
-
         # Create a temporary file for the SSH private key from GitHub secrets
         echo "${{ secrets.EC2_SSH_KEY }}" > private_key.pem
         # Set restrictive permissions on the private key for security
         chmod 600 private_key.pem
 
-        # Define APP_DIR for the *local* runner's shell (used by scp)
-        LOCAL_APP_DIR="/home/${{ secrets.SERVER_USERNAME }}/globalcurrency-countrydata-app"
+        # Define the application directory on the EC2 instance
+        # Using SERVER_USERNAME secret for dynamic path
+        APP_DIR="/home/${{ secrets.SERVER_USERNAME }}/globalcurrency-countrydata-app"
 
-        echo "Attempting initial SSH to clean and create app directory on EC2 at $(date)"
         # SSH into the EC2 instance to clean and create the app directory
-        # Use LOCAL_APP_DIR here as it's for the remote command executed directly
-        ssh -i private_key.pem -o StrictHostKeyChecking=no ${{ secrets.SERVER_USERNAME }}@${{ secrets.SERVER_HOST }} "rm -rf $LOCAL_APP_DIR && mkdir -p $LOCAL_APP_DIR"
-        echo "Initial SSH complete at $(date)"
+        # -o StrictHostKeyChecking=no bypasses the host key check for CI (use with caution)
+        ssh -i private_key.pem -o StrictHostKeyChecking=no ${{ secrets.SERVER_USERNAME }}@${{ secrets.SERVER_HOST }} "rm -rf $APP_DIR && mkdir -p $APP_DIR"
 
-        echo "Starting SCP file transfer from runner to EC2 at $(date)"
         # Securely copy all project files from the runner to the EC2 instance's app directory
-        scp -i private_key.pem -o StrictHostKeyChecking=no -r . ${{ secrets.SERVER_USERNAME }}@${{ secrets.SERVER_HOST }}:$LOCAL_APP_DIR/
-        echo "SCP file transfer complete at $(date)"
+        scp -i private_key.pem -o StrictHostKeyChecking=no -r . ${{ secrets.SERVER_USERNAME }}@${{ secrets.SERVER_HOST }}:$APP_DIR/
 
-        # --- DEBUGGING ADDITION: Verify files copied to target directory after SCP ---
-        echo "Verifying files copied to $LOCAL_APP_DIR on EC2 (after SCP) at $(date)"
-        ssh -i private_key.pem -o StrictHostKeyChecking=no ${{ secrets.SERVER_USERNAME }}@${{ secrets.SERVER_HOST }} "ls -F $LOCAL_APP_DIR"
-        echo "Verification complete at $(date)"
-        # --- END DEBUGGING ADDITION ---
-
-        echo "Starting SSH for Docker build and Kubernetes deployment at $(date)"
+        # SSH into the EC2 instance again to perform Docker build and Kubernetes deployment
         ssh -i private_key.pem -o StrictHostKeyChecking=no ${{ secrets.SERVER_USERNAME }}@${{ secrets.SERVER_HOST }} << 'EOF'
-          # Enable shell debugging to see every command executed
-          set -eux # -e: exit immediately if a command exits with a non-zero status. -u: treat unset variables as an error. -x: print commands and their arguments as they are executed.
+          # Navigate to the application directory on the EC2 instance
+          cd "$APP_DIR"
 
-          # *** IMPORTANT FIX: Define APP_DIR inside the remote SSH session ***
-          APP_DIR="/home/${{ secrets.SERVER_USERNAME }}/globalcurrency-countrydata-app"
-          # *******************************************************************
+          # IMPORTANT: Authenticate Docker to Docker Hub (if you plan to pull public images or push later)
+          # Though this specific pipeline builds locally on EC2, sometimes this is needed for base images.
+          # If ojayde35/globalcurrency-countrydata-app:latest was a public base image on Docker Hub, this might not be strictly needed for build,
+          # but is generally good practice if your workflow involves registries.
+          # For this specific setup, you won't be pushing/pulling from Docker Hub with this key.
+          # You can remove this login if your EC2 instance doesn't need to interact with private Docker Hub repos.
+          # echo "${{ secrets.DOCKERHUB_TOKEN }}" | docker login --username "${{ secrets.DOCKERHUB_USERNAME }}" --password-stdin
 
-          echo "Inside EC2 SSH session: Current working directory is $(pwd) at $(date) (cd command was skipped)"
+          echo "Building Docker image for globalcurrency-countrydata-app locally on EC2..."
+          # Build the Docker image on the EC2 instance
+          # Tag the image with your Docker Hub username and app name
+          docker build -t ojayde35/globalcurrency-countrydata-app:latest .
 
-          echo "Inside EC2 SSH session: Listing contents of the home directory at $(date)"
-          ls -F ~
-          echo "Inside EC2 SSH session: Listing contents of the target app directory ($APP_DIR) at $(date)"
-          ls -F "$APP_DIR"
-          echo "Inside EC2 SSH session: Directory listings complete at $(date)"
-
-          echo "Inside EC2 SSH session: Starting Minikube at $(date)"
-          minikube start --driver=docker # This line is crucial!
-          echo "Inside EC2 SSH session: Minikube started at $(date)"
-
-          echo "Inside EC2 SSH session: Building Docker image for globalcurrency-countrydata-app locally on EC2 at $(date)"
-          docker build -t ojayde35/globalcurrency-countrydata-app:latest -f "$APP_DIR/Dockerfile" "$APP_DIR"
-          echo "Inside EC2 SSH session: Docker image built at $(date)"
-
-          echo "Inside EC2 SSH session: Loading image into Minikube at $(date)"
+          echo "Loading image into Minikube..."
+          # Load the locally built Docker image directly into Minikube's Docker daemon
           minikube image load ojayde35/globalcurrency-countrydata-app:latest
-          echo "Inside EC2 SSH session: Image loaded into Minikube at $(date)"
 
-          echo "Inside EC2 SSH session: Applying Kubernetes manifests at $(date)"
-          kubectl apply -f "$APP_DIR/deployment.yml"
-          kubectl apply -f "$APP_DIR/service.yml"
-          echo "Inside EC2 SSH session: Kubernetes manifests applied at $(date)"
+          echo "Applying Kubernetes manifests..."
+          # Apply your Kubernetes Deployment and Service YAML files
+          # These files (deployment.yml, service.yml) MUST be in your repository root
+          kubectl apply -f deployment.yml
+          kubectl apply -f service.yml
 
-          echo "Inside EC2 SSH session: Waiting for globalcurrency-countrydata deployment to be ready at $(date)"
-          kubectl rollout status deployment/globalcurrency-countrydata-deployment
+          echo "Waiting for globalcurrency-countrydata  deployment to be ready..."
+          # Wait for the Kubernetes deployment to become ready
+          kubectl rollout status deployment/globalcurrency-countrydata-deployment  # Adjust deployment name if different in deployment.yml
 
-          echo "Inside EC2 SSH session: Getting Minikube service URL for globalcurrency-countrydata-app at $(date)"
-          minikube service globalcurrency-countrydata-service --url
+          echo "Getting Minikube service URL for globalcurrency-countrydata-app..."
+          # Get the URL of your deployed service (output will appear in GitHub Actions logs)
+          minikube service globalcurrency-countrydata-service --url # Adjust service name if different in service.yml
 
           echo "Deployment to Minikube on EC2 successful!!"
         EOF
-
-        echo "SSH for Docker build and Kubernetes deployment complete at $(date)"
+        
         # Clean up the temporary SSH private key from the GitHub Actions runner
         rm -f private_key.pem
-        echo "Finished 'Connect to EC2 instance and Deploy to Kubernetes' step at $(date)"
