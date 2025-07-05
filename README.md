@@ -99,6 +99,7 @@ terraform apply
 
 ![Screenshot (258)](https://github.com/user-attachments/assets/82505720-b4aa-48bd-bc9d-b1a5f5c87be5)
 
+![Screenshot (263)](https://github.com/user-attachments/assets/625e5513-c4b5-412b-8fbc-c0a221a4d4fe)
 
 ## 3.5 Configure kubectl
 
