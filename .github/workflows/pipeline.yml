@@ -57,19 +57,22 @@ jobs:
         echo "Starting SSH for Docker build and Kubernetes deployment at $(date)"
         ssh -i private_key.pem -o StrictHostKeyChecking=no ${{ secrets.SERVER_USERNAME }}@${{ secrets.SERVER_HOST }} << 'EOF'
           # Enable shell debugging to see every command executed
-          set -x
+          set -eux # -e: exit immediately if a command exits with a non-zero status. -u: treat unset variables as an error. -x: print commands and their arguments as they are executed.
 
           echo "Inside EC2 SSH session: Attempting to change directory to $APP_DIR at $(date)"
           # Print the value of APP_DIR to ensure it's correct
           echo "APP_DIR is: $APP_DIR"
           # Print current working directory before cd
           echo "Current directory before cd: $(pwd)"
+          # List all contents of the home directory to see if there are unexpected directories
+          echo "Listing contents of home directory before cd:"
+          ls -F ~
+          echo "Listing contents of target directory ($APP_DIR) before cd:"
+          ls -F "$APP_DIR" || echo "Target directory $APP_DIR does not exist before cd attempt."
 
-          # Explicitly change directory and check its success
-          if ! cd "$APP_DIR"; then
-            echo "ERROR: Failed to change directory to $APP_DIR. Exiting SSH session."
-            exit 1
-          fi
+
+          # Explicitly change directory. 'set -e' will cause the script to exit if this fails.
+          cd "$APP_DIR"
           echo "Inside EC2 SSH session: cd command executed successfully. Current working directory is $(pwd) at $(date)"
 
           echo "Inside EC2 SSH session: Listing contents of current directory (after cd) at $(date)"
