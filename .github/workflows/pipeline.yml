@@ -33,7 +33,7 @@ jobs:
 
         # Define the application directory on the EC2 instance
         # Using SERVER_USERNAME secret for dynamic path
-        APP_DIR="/home/${{ secrets.SERVER_USERNAME }}/GlobalCurrency-CountryData"
+        APP_DIR="/home/${{ secrets.SERVER_USERNAME }}/globalcurrency-countrydata-app"
 
         # SSH into the EC2 instance to clean and create the app directory
         # -o StrictHostKeyChecking=no bypasses the host key check for CI (use with caution)
