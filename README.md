@@ -154,7 +154,7 @@ Connect to EC2 instance via SSH.
 
 Clean and create the application directory on EC2.
 
-Securely copy your project files to the EC2 instance.
+Securely copy the project files to the EC2 instance.
 
 Inside the EC2 instance's shell:
 
