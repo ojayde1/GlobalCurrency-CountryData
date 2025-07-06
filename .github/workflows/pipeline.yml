@@ -56,13 +56,18 @@ jobs:
         ECR_REPOSITORY: ${{ secrets.ECR_REPOSITORY }}
         IMAGE_TAG: ${{ github.sha }}
       run: |
-        echo "Applying Kubernetes manifests to EKS at $(date)..."
-        # Update the image in your deployment.yml to use the ECR image
-        # This assumes your deployment.yml has a container named 'globalcurrency-countrydata-app'
+        echo "Applying Kubernetes deployment manifest to EKS at $(date)..."
+        # IMPORTANT: Apply the deployment.yml first to ensure the deployment exists
+        kubectl apply -f deployment.yml
+        echo "Kubernetes deployment manifest applied at $(date)."
+
+        echo "Updating image for globalcurrency-countrydata-deployment at $(date)..."
+        # Now, update the image. This command will succeed because the deployment now exists.
         kubectl set image deployment/globalcurrency-countrydata-deployment globalcurrency-countrydata-app=$ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG --record
         echo "Kubernetes deployment image updated at $(date)."
 
         echo "Applying Kubernetes service manifest to EKS (type LoadBalancer) at $(date)..."
+        # The service.yml should also be applied to ensure the LoadBalancer service is created/updated
         kubectl apply -f service.yml
         echo "Kubernetes service manifest applied at $(date)."
 
