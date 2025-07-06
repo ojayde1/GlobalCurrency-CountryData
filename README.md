@@ -154,8 +154,6 @@ Login to Amazon ECR: Authenticate the Docker client with your ECR registry, allo
 
 Build and push Docker image to ECR: Compile your application into a Docker image and upload it to your ECR repository.
 
-![Screenshot (267)](https://github.com/user-attachments/assets/abcdcfce-2099-4b01-b4e9-28558b17653c)
-
 ![Screenshot (277)](https://github.com/user-attachments/assets/3512a65e-4854-400d-9341-58cf276bf7f2)
 
 Update Kubeconfig for EKS: Configure kubectl on the runner to connect to your active Amazon EKS cluster.
