@@ -1,4 +1,4 @@
-name: CI/CD Pipeline
+name: CI/CD Pipeline to EKS
 
 on:
   push:
@@ -7,96 +7,70 @@ on:
     branches: [ main ] # Triggers on pull requests to the main branch
 
 jobs:
-  build-and-deploy: # This single job handles everything: checkout, deploy setup, build, and Kubernetes deployment
+  build-and-deploy:
     runs-on: ubuntu-latest # Uses a GitHub-hosted Ubuntu runner
+
+    permissions:
+      id-token: write # Required for aws-actions/configure-aws-credentials with OIDC
+      contents: read
 
     steps:
     - name: Checkout code
       uses: actions/checkout@v3 # Checks out your repository's code into the runner's workspace
 
     - name: Configure AWS credentials
-      # This action sets up AWS CLI credentials on the runner.
-      # While not directly used for deployment commands here (SSH is used),
-      # it's good practice if you have other AWS CLI interactions.
+      # This action sets up AWS CLI credentials and handles ECR login, and prepares for EKS.
       uses: aws-actions/configure-aws-credentials@v2
       with:
         aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
         aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-        aws-region: eu-west-1 # Make sure this matches your EC2 instance's region
+        aws-region: eu-west-1 # Your AWS region
 
-    - name: Connect to EC2 instance and Deploy to Kubernetes
+    - name: Login to Amazon ECR
+      id: login-ecr
+      uses: aws-actions/amazon-ecr-login@v2
+
+    - name: Build and push Docker image to ECR
+      env:
+        ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
+        ECR_REPOSITORY: ${{ secrets.ECR_REPOSITORY }} # Your ECR repository name (e.g., globalcurrency-countrydata-app)
+        IMAGE_TAG: ${{ github.sha }} # Use commit SHA as image tag for uniqueness
       run: |
-        echo "Starting 'Connect to EC2 instance and Deploy to Kubernetes' step at $(date)"
+        echo "Building Docker imageat $(date)..."
+        docker build -t $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG .
+        docker tag $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG $ECR_REGISTRY/$ECR_REPOSITORY:latest # Also tag as latest
 
-        # Create a temporary file for the SSH private key from GitHub secrets
-        echo "${{ secrets.EC2_SSH_KEY }}" > private_key.pem
-        # Set restrictive permissions on the private key for security
-        chmod 600 private_key.pem
+        echo "Pushing Docker image to ECRat $(date)..."
+        docker push $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
+        docker push $ECR_REGISTRY/$ECR_REPOSITORY:latest
 
-        # Define APP_DIR for the *local* runner's shell (used by scp)
-        LOCAL_APP_DIR="/home/${{ secrets.SERVER_USERNAME }}/globalcurrency-countrydata-app"
+    - name: Set up kubectl for EKS
+      # This action configures kubectl to interact with your EKS cluster
+      uses: aws-actions/amazon-eks-setup@v1
+      with:
+        cluster-name: globalcurrency-countrydata-cluster # Your EKS cluster name (from Terraform)
+        aws-region: eu-west-1 # Your AWS region
 
-        echo "Attempting initial SSH to clean and create app directory on EC2 at $(date)"
-        # SSH into the EC2 instance to clean and create the app directory
-        # Use LOCAL_APP_DIR here as it's for the remote command executed directly
-        ssh -i private_key.pem -o StrictHostKeyChecking=no ${{ secrets.SERVER_USERNAME }}@${{ secrets.SERVER_HOST }} "rm -rf $LOCAL_APP_DIR && mkdir -p $LOCAL_APP_DIR"
-        echo "Initial SSH complete at $(date)"
+    - name: Deploy to EKS
+      env:
+        ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
+        ECR_REPOSITORY: ${{ secrets.ECR_REPOSITORY }}
+        IMAGE_TAG: ${{ github.sha }}
+      run: |
+        echo "Applying Kubernetes manifests to EKS at $(date)..." 
+        # Update the image in your deployment.yml to use the ECR image
+        # This assumes your deployment.yml has a container named 'globalcurrency-countrydata-app'
+        kubectl set image deployment/globalcurrency-countrydata-deployment globalcurrency-countrydata-app=$ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG --record
 
-        echo "Starting SCP file transfer from runner to EC2 at $(date)"
-        # Securely copy all project files from the runner to the EC2 instance's app directory
-        scp -i private_key.pem -o StrictHostKeyChecking=no -r . ${{ secrets.SERVER_USERNAME }}@${{ secrets.SERVER_HOST }}:$LOCAL_APP_DIR/
-        echo "SCP file transfer complete at $(date)"
+        echo "Applying Kubernetes service manifest to EKS (type LoadBalancer)at $(date)..."
+        kubectl apply -f service.yml
 
-        # --- DEBUGGING ADDITION: Verify files copied to target directory after SCP ---
-        echo "Verifying files copied to $LOCAL_APP_DIR on EC2 (after SCP) at $(date)"
-        ssh -i private_key.pem -o StrictHostKeyChecking=no ${{ secrets.SERVER_USERNAME }}@${{ secrets.SERVER_HOST }} "ls -F $LOCAL_APP_DIR"
-        echo "Verification complete at $(date)"
-        # --- END DEBUGGING ADDITION ---
+        echo "Waiting for globalcurrency-countrydata deployment to be readyat $(date)..."
+        kubectl rollout status deployment/globalcurrency-countrydata-deployment
 
-        echo "Starting SSH for Docker build and Kubernetes deployment at $(date)"
-        ssh -i private_key.pem -o StrictHostKeyChecking=no ${{ secrets.SERVER_USERNAME }}@${{ secrets.SERVER_HOST }} << 'EOF'
-          # Enable shell debugging to see every command executed
-          set -eux # -e: exit immediately if a command exits with a non-zero status. -u: treat unset variables as an error. -x: print commands and their arguments as they are executed.
+        echo "Getting EKS LoadBalancer URLat $(date)..."
+        # Wait for the LoadBalancer to be provisioned and get its external IP
+        kubectl get service globalcurrency-countrydata-service -o jsonpath='{.status.loadBalancer.ingress[0].hostname}'
+        echo "" # Add a newline for cleaner output
 
-          # *** IMPORTANT FIX: Define APP_DIR inside the remote SSH session ***
-          APP_DIR="/home/${{ secrets.SERVER_USERNAME }}/globalcurrency-countrydata-app"
-          # *******************************************************************
-
-          echo "Inside EC2 SSH session: Current working directory is $(pwd) at $(date) (cd command was skipped)"
-
-          echo "Inside EC2 SSH session: Listing contents of the home directory at $(date)"
-          ls -F ~
-          echo "Inside EC2 SSH session: Listing contents of the target app directory ($APP_DIR) at $(date)"
-          ls -F "$APP_DIR"
-          echo "Inside EC2 SSH session: Directory listings complete at $(date)"
-
-          echo "Inside EC2 SSH session: Starting Minikube at $(date)"
-          minikube start --driver=docker # This line is crucial!
-          echo "Inside EC2 SSH session: Minikube started at $(date)"
-
-          echo "Inside EC2 SSH session: Building Docker image for globalcurrency-countrydata-app locally on EC2 at $(date)"
-          docker build -t ojayde35/globalcurrency-countrydata-app:latest -f "$APP_DIR/Dockerfile" "$APP_DIR"
-          echo "Inside EC2 SSH session: Docker image built at $(date)"
-
-          echo "Inside EC2 SSH session: Loading image into Minikube at $(date)"
-          minikube image load ojayde35/globalcurrency-countrydata-app:latest
-          echo "Inside EC2 SSH session: Image loaded into Minikube at $(date)"
-
-          echo "Inside EC2 SSH session: Applying Kubernetes manifests at $(date)"
-          kubectl apply -f "$APP_DIR/deployment.yml"
-          kubectl apply -f "$APP_DIR/service.yml"
-          echo "Inside EC2 SSH session: Kubernetes manifests applied at $(date)"
-
-          echo "Inside EC2 SSH session: Waiting for globalcurrency-countrydata deployment to be ready at $(date)"
-          kubectl rollout status deployment/globalcurrency-countrydata-deployment
-
-          echo "Inside EC2 SSH session: Getting Minikube service URL for globalcurrency-countrydata-app at $(date)"
-          minikube service globalcurrency-countrydata-service --url
-
-          echo "Deployment to Minikube on EC2 successful!!"
-        EOF
-
-        echo "SSH for Docker build and Kubernetes deployment complete at $(date)"
-        # Clean up the temporary SSH private key from the GitHub Actions runner
-        rm -f private_key.pem
-        echo "Finished 'Connect to EC2 instance and Deploy to Kubernetes' step at $(date)"
+        echo "Deployment to EKS successful at $(date)! "
