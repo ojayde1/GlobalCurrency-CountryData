@@ -50,7 +50,7 @@ data "aws_subnets" "public" {
 }
 
 
-# --- EKS Cluster Provisioning ---
+# --- EKS Cluster Provisioning --
 resource "aws_eks_cluster" "this" {
   name     = "${var.project_name}-cluster" # Using project_name variable
   role_arn = aws_iam_role.eks_cluster_role.arn
