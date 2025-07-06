@@ -115,79 +115,70 @@ aws eks update-kubeconfig --region eu-west-1 --name globalcurrency-countrydata-c
 kubectl apply -f deployment.yaml
 kubectl apply -f service.yaml
 ```
-Waited for the deployment to be ready.
+Waited for the deployment to be ready and the AWS Load Balancer to be provisioned.
 ```bash
-kubectl get service globalcurrency-countrydata-service
+kubectl rollout status deployment/globalcurrency-countrydata-deployment
 ```
- The Minikube service URL was available.
+Got the LoadBalancer URL to access your application:
 
-![Screenshot (270)](https://github.com/user-attachments/assets/d9e88520-c5e9-4af4-8b8e-b79f74da262f)
+```bash
+kubectl get service globalcurrency-countrydata-service -o jsonpath='{.status.loadBalancer.ingress[0].hostname}'
+```
+The output will be the public DNS name of your AWS Load Balancer.
 
-![Screenshot (271)](https://github.com/user-attachments/assets/6076bfae-517f-41fc-ab8a-6a1f170671d5)
 
 ## 4 Automate Deployment 
-using GitHub Actions (Minikube on EC2)
-This section details the CI/CD pipeline to deploy my application to a Minikube cluster running on an EC2 instance.
+This section details the CI/CD pipeline to deploy my application to EKS.
 
 ## 4.1. Configure GitHub Repository Secrets
 I added the following secrets to my GitHub repository (Settings > Secrets and variables > Actions > New repository secret):
 
-EC2_SSH_KEY: The entire content of EC2 instance's SSH private key.
+AWS_ACCESS_KEY_ID: AWS Access Key ID (for aws-actions/configure-aws-credentials).
 
-SERVER_USERNAME: The SSH username for  EC2 instance (e.g., ubuntu).
+AWS_SECRET_ACCESS_KEY: AWS Secret Access Key (for aws-actions/configure-aws-credentials).
 
-SERVER_HOST: The Public IP address or Public DNS name of EC2 instance.
+ECR_REPOSITORY: The value is the name of the Amazon ECR repository created in AWS.
 
-AWS_ACCESS_KEY_ID: Your AWS Access Key ID (for aws-actions/configure-aws-credentials).
-
-AWS_SECRET_ACCESS_KEY: Your AWS Secret Access Key (for aws-actions/configure-aws-credentials).
-
-(Optional) DOCKERHUB_USERNAME: Docker Hub username (if uncommenting Docker login).
-
-(Optional) DOCKERHUB_TOKEN:  Docker Hub Personal Access Token (PAT) (if uncommenting Docker login).
-
-![Screenshot (267)](https://github.com/user-attachments/assets/e52e8f44-6d0d-4114-8685-c22271bc5214)
+![Screenshot (279)](https://github.com/user-attachments/assets/5504fa64-65a0-4b49-8392-e45cb9e34d1a)
 
 ## 4.2. GitHub Actions Workflow (.github/workflows/main.yml)
 Created a file named pipeline.yml inside the .github/workflows/ directory in the repository. This workflow will:
 
-Connect to EC2 instance via SSH.
+Checkout code: Retrieve the latest version of your application code from the GitHub repository.
 
-Clean and create the application directory on EC2.
+Configure AWS credentials: Set up the necessary AWS authentication on the runner to interact with AWS services.
 
-Securely copy the project files to the EC2 instance.
+Login to Amazon ECR: Authenticate the Docker client with your ECR registry, allowing it to push and pull images.
 
-Inside the EC2 instance's shell:
+![Screenshot (273)](https://github.com/user-attachments/assets/2f5fc914-3165-4274-a19a-1c4ebe53b754)
 
-Start Minikube.
+Build and push Docker image to ECR: Compile your application into a Docker image and upload it to your ECR repository.
 
-Build the Docker image locally.
+![Screenshot (267)](https://github.com/user-attachments/assets/abcdcfce-2099-4b01-b4e9-28558b17653c)
 
-Load the image into Minikube.
+![Screenshot (277)](https://github.com/user-attachments/assets/3512a65e-4854-400d-9341-58cf276bf7f2)
 
-## 4.5 Access the Deployed Application
-My application is now deployed to a Minikube cluster running on EC2 instance. The minikube service --url command provided an internal IP. To access this from the local machine's browser, i had to create an SSH tunnel.
+Update Kubeconfig for EKS: Configure kubectl on the runner to connect to your active Amazon EKS cluster.
 
-## 4.6 Get EC2 Instance Public IP/DNS
-Obtained the Public IPv4 address or Public IPv4 DNS of your EC2 instance from the AWS EC2 Console.
+Deploy to EKS: Apply your Kubernetes deployment and service manifests to the EKS cluster, update the application image, and ensure the application is running and accessible via an AWS Load Balancer.
+NOTE: In my deployment yaml file, my image is ecr repository image
 
-## 4.7 Create SSH Tunnel from Your Local Machine
-I opened a new terminal window on your local computer (not on the EC2 instance). I used the following SSH command, replacing placeholders with your actual values:
+![Screenshot (280)ecr](https://github.com/user-attachments/assets/3115d199-0bd4-4f93-b2fe-820fcff94674)
+
+## 4.3 Access the Deployed Application
+
+Once the GitHub Actions workflow completes successfully, your application will be deployed to the AWS EKS cluster and exposed via an AWS Load Balancer. You can access your application directly using the Load Balancer's public DNS name.
+
+![Screenshot (275)](https://github.com/user-attachments/assets/c1b81b04-c98a-46f5-b798-c04ce20abd3b)
+
+## 4.4 Get the Load Balancer URL
+
+The GitHub Actions workflow's "Deploy to EKS" step will output the Load Balancer URL. You can find this in the workflow logs. Alternatively, you can retrieve it directly from your terminal after the deployment:
 
 ```bash
-chmod 400 "<YOUR_RIVATE_KEY_PEM.pem>"
+kubectl get service globalcurrency-countrydata-service -o jsonpath='{.status.loadBalancer.ingress[0].hostname}'
 ```
-```bash
-ssh -i "<YOUR_RIVATE_KEY_PEM.pem>" ubuntu@ec2-54-229-187-189.eu-west-1.compute.amazonaws.com
-```
-![Screenshot (264)](https://github.com/user-attachments/assets/7c11c11a-0049-434e-b25d-737e6e680b77)
-
-## 4.8 Access in Browser
-Confirmed on the web browser on my local machine and navigated to:
-
-http://localhost:3000
-
-![Screenshot (265)](https://github.com/user-attachments/assets/8aeee62d-2e9c-471d-87b5-d71e512d6176)
+![Screenshot (274)](https://github.com/user-attachments/assets/b309ddbb-cf9f-49e7-8edc-b1fc768ce062)
 
 *** Clean up
 ## terraform destroy
